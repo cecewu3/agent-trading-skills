@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NewsJudgeResult",
+  "type": "object",
+  "required": ["action", "reasons"],
+  "properties": {
+    "action": { "enum": ["BUY", "SELL", "NONE", "ASK_USER"] },
+    "symbol": { "type": ["string", "null"] },
+    "tier": { "enum": ["probe", "normal", null] },
+    "market_moving": {
+      "type": "object",
+      "properties": {
+        "p_yes": { "type": "number" },
+        "confidence": { "type": "number" }
+      }
+    },
+    "coin": {
+      "type": "object",
+      "properties": {
+        "choice": { "type": "string" },
+        "confidence": { "type": "number" }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "properties": {
+        "choice": { "enum": ["BUY", "SELL", "HOLD"] },
+        "confidence": { "type": "number" }
+      }
+    },
+    "strength": {
+      "type": "object",
+      "properties": {
+        "score": { "type": "number" },
+        "of_max": { "type": "number" },
+        "confidence": { "type": "number" }
+      }
+    },
+    "high_risk": {
+      "type": "object",
+      "properties": {
+        "p_yes": { "type": "number" },
+        "confidence": { "type": "number" }
+      }
+    },
+    "reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "low_liquidity": { "type": "boolean" }
+  }
+}
