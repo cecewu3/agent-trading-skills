@@ -1,0 +1,36 @@
+# Local config and secrets (never commit)
+config.yaml
+config.yml
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+
+# Runtime state and logs
+data/
+state/
+*.log
+trades.log
+positions.json
+seen.json
+*_cache.json
+trade_state.json
+news_digest.jsonl
+.lock
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
