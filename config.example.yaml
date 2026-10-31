@@ -1,0 +1,132 @@
+# Copy to config.yaml and fill in. All strategy numbers live HERE—not in skills or source defaults.
+# Comments explain each key. Empty lists mean "no extra filter" unless noted.
+
+# --- Exchange ---
+exchange:
+  # Reference implementation: binance. Adapters may support other spot venues.
+  name: binance                 # e.g. binance | other_spot_venue
+  testnet: true                 # true = use testnet/paper endpoints first
+  dry_run: true                 # true = no real orders (order-test / simulate fills)
+  rest_base_url: ""             # optional override; leave empty for venue default
+  quote_asset: "USDT"           # quote currency for pairs, e.g. USDT, USDC
+  # API keys: never put secrets in this file. Use OS keychain or env:
+  #   env: EXCHANGE_API_KEY / EXCHANGE_API_SECRET
+  #   or keychain service names below (macOS Keychain / libsecret / etc.)
+  keychain:
+    service_api_key: "EXCHANGE_API_KEY"
+    service_api_secret: "EXCHANGE_API_SECRET"
+    account: "spot-bot"
+
+# --- Universe (which symbols may ever be traded) ---
+universe:
+  # If include is non-empty, ONLY these base assets (or full symbols) are eligible.
+  include_bases: []             # e.g. ["BTC", "ETH"] — user fills
+  exclude_bases: []             # always skip these bases
+  exclude_stablecoin_bases: true
+  # Extra stable / pegged bases to exclude when the flag above is true (extend as needed)
+  stablecoin_bases:
+    - USDC
+    - FDUSD
+    - TUSD
+    - DAI
+    - BUSD
+  # Skip non-crypto products if the venue lists them (e.g. tokenized equities groups)
+  exclude_permission_groups: [] # venue-specific; leave empty if unused
+  min_quote_volume_24h: null    # optional liquidity floor in quote asset; null = no filter
+  refresh_hours: 24             # how often to refresh exchangeInfo-style cache
+
+# --- Position / risk caps (enforced in code before every order) ---
+risk:
+  max_buy_quote: null           # max quote amount per single buy (REQUIRED: set a number)
+  min_buy_quote: null           # min quote per buy (must satisfy venue MIN_NOTIONAL)
+  max_total_cost_quote: null    # max sum of cost basis across open bot positions
+  max_positions_per_symbol: 1
+  max_open_positions: null      # optional global cap; null = unlimited within cost cap
+  # Exit rules (percent relative to entry / cost basis; signs as your code defines)
+  take_profit_pct: null         # e.g. positive number meaning "sell when PnL >= this %"
+  stop_loss_pct: null           # e.g. negative number meaning "sell when PnL <= this %"
+  max_hold_hours: null          # force-evaluate / exit after this many hours; null = no time stop
+
+# --- Entry thresholds (judge output → action) ---
+# Two tiers let you size smaller "probe" entries vs full "normal" entries.
+entry:
+  # Global discard floor: if any key confidence is below this → NONE or ASK_USER (never auto-trade).
+  # Per-tier min_confidence below can be higher; leave null to rely only on this floor.
+  min_confidence: null          # 0–1; REQUIRED before live auto-trade
+  sell_min_confidence: null     # 0–1; min confidence to auto-SELL an existing spot position
+  probe:
+    min_confidence: null        # 0–1; confidence floor for probe-tier buys (null = use entry.min_confidence)
+    min_impact: null            # impact/strength score floor for probe tier (same scale as judge strength)
+    max_risk: null              # max acceptable high_risk p_yes for probe (0–1); above → ASK_USER/NONE
+    min_strength: null          # alias/legacy: same idea as min_impact; prefer min_impact
+    size_quote: null            # quote amount for probe buys (REQUIRED if using probe tier)
+  normal:
+    min_confidence: null        # 0–1; confidence floor for normal-tier buys
+    min_impact: null            # impact/strength score floor for normal tier
+    max_risk: null              # max acceptable high_risk p_yes for normal
+    min_strength: null          # alias/legacy: prefer min_impact
+    size_quote: null            # quote amount for normal buys (REQUIRED if using normal tier)
+  # Map judge direction to allowed actions
+  allow_buy: true
+  allow_sell_existing: true     # sell only reduces bot-tracked positions; no shorting
+  ask_user_on_high_risk: true
+
+# --- Schedule ---
+schedule:
+  timezone: "UTC"               # IANA tz, e.g. UTC, Europe/London, America/New_York
+  news_poll_minutes: null       # how often to collect news
+  position_check_minutes: null  # how often to check TP/SL/max-hold
+  daily_report_time: null       # "HH:MM" local to timezone; null = manual only
+  security_check_weekday: null  # 0=Mon .. 6=Sun; null = manual only
+
+# --- News sources (enable only what you need; URLs are examples) ---
+news:
+  lookback_minutes: null        # window for "new" items
+  seen_state_file: "data/seen.json"
+  sources:
+    # Each source: id, kind (rss|exchange_announcement|http_json), url, always_keep
+    - id: example_rss
+      kind: rss
+      url: "https://example.com/crypto-rss.xml"
+      always_keep: false
+    # Add exchange announcement endpoints, regulators, etc. as needed:
+    # - id: venue_listings
+    #   kind: exchange_announcement
+    #   url: ""
+    #   always_keep: true
+  # Optional keyword hints (not a substitute for the judge)
+  market_keywords: []           # e.g. ["ETF", "SEC", "hack", "listing"]
+  noise_keywords: []            # drop obvious spam / press-release noise
+
+# --- Judge / LLM ---
+judge:
+  # Provider-agnostic: your code calls whatever model CLI/API you configure.
+  model: ""                     # e.g. provider-specific model id
+  timeout_seconds: 90
+  max_candidates: 12
+  output_schema_version: 1
+
+# --- Notifications (optional) ---
+notifications:
+  channel: "none"               # none | stdout | webhook | email | telegram | slack
+  webhook_url_env: "NOTIFY_WEBHOOK_URL"  # read URL from env; do not put secrets here
+  on_trade: true
+  on_ask_user: true
+  on_security_alert: true
+
+# --- Backtest ---
+backtest:
+  kline_interval: "1h"          # venue kline interval
+  fee_rate: null                # e.g. 0.001 for 0.1% per side; REQUIRED for honest PnL
+  train_start: null             # ISO date
+  train_end: null
+  test_start: null              # out-of-sample window
+  test_end: null
+  initial_quote: null
+
+# --- Paths (relative to project root) ---
+paths:
+  data_dir: "data"
+  positions_file: "data/positions.json"
+  trades_log: "data/trades.log"
+  report_dir: "data/reports"
